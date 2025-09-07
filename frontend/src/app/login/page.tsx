@@ -17,7 +17,7 @@ export default function SignInPage() {
 
 	useEffect(() => {
 		if (isLoaded && user) {
-			router.push('/');
+			window.location.href = '/'; // full reload to reset state
 		}
 	}, [isLoaded, user, router]);
 
@@ -44,7 +44,7 @@ export default function SignInPage() {
 				closable: true,
 			});
 
-			router.push('/');
+			window.location.href = '/'; // full reload to reset state
 			setLoading(false);
 		} catch (err: any) {
 			toaster.create({
@@ -79,6 +79,7 @@ export default function SignInPage() {
 								<Input
 									placeholder="Email address"
 									type="email"
+									rounded={'xs'}
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									required
@@ -86,11 +87,12 @@ export default function SignInPage() {
 								<Input
 									placeholder="Password"
 									type="password"
+									rounded={'xs'}
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
 									required
 								/>
-								<Button colorPalette="teal" type="submit" w="full">
+								<Button rounded={'xs'} colorPalette="pink" type="submit" w="full">
 									Sign In
 								</Button>
 							</Stack>

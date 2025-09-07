@@ -2,8 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Product } from '@/types';
+import { useUser } from '@/context/UserContext';
 
-interface CartItem extends Product {
+export interface CartItem {
+	id: string;
 	quantity: number;
 }
 
@@ -14,7 +16,6 @@ interface CartContextType {
 	increaseQty: (id: string) => void;
 	decreaseQty: (id: string) => void;
 	clearCart: () => void;
-	syncCartFromBackend: (token: string) => Promise<void>;
 	isLoaded: boolean;
 }
 
@@ -23,130 +24,142 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const [cart, setCart] = useState<CartItem[]>([]);
 	const [isLoaded, setIsLoaded] = useState(false);
+	const { user, token } = useUser();
 
-	const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-	// ✅ Load from localStorage once
+	// ✅ Load from localStorage on mount
 	useEffect(() => {
 		const saved = localStorage.getItem('cart');
 		if (saved) {
-			setCart(JSON.parse(saved));
+			try {
+				setCart(JSON.parse(saved));
+			} catch {
+				setCart([]);
+			}
 		}
 		setIsLoaded(true);
 	}, []);
 
-	// ✅ Always save to localStorage
+	// 🔑 Sync cart whenever localStorage changes (e.g., after login)
+	useEffect(() => {
+		const handleStorageChange = () => {
+			const saved = localStorage.getItem('cart');
+			if (saved) {
+				setCart(JSON.parse(saved));
+			}
+		};
+		window.addEventListener('storage', handleStorageChange);
+
+		return () => {
+			window.removeEventListener('storage', handleStorageChange);
+		};
+	}, []);
+
+	// ✅ Always save to localStorage when cart changes
 	useEffect(() => {
 		if (isLoaded) {
-			localStorage.setItem('cart', JSON.stringify(cart));
+			try {
+				localStorage.setItem('cart', JSON.stringify(cart));
+			} catch (err) {
+				console.error('Error saving cart to localStorage:', err);
+			}
 		}
 	}, [cart, isLoaded]);
 
-	// -------------------
-	// Helper: Call backend if logged in
-	// -------------------
-	const syncWithBackend = async (endpoint: string, method: string, body?: object) => {
-		const token = localStorage.getItem('token');
-		if (!token) return;
+	// ✅ Cart actions
+	const addToCart = (product: Product) => {
+		setCart((prev) => {
+			const existing = prev.find((i) => i.id === product.id);
+			if (existing) {
+				return prev.map((i) => (i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
+			}
+			return [...prev, { id: product.id, quantity: 1 }];
+		});
 
-		try {
-			await fetch(`${API_URL}/api/cart${endpoint}`, {
-				method,
+		if (user && token) {
+			fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart`, {
+				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${token}`,
 				},
-				body: body ? JSON.stringify(body) : undefined,
-			});
-		} catch (err) {
-			console.error('Cart backend sync failed:', err);
+				body: JSON.stringify({ productId: product.id, quantity: 1, user }),
+			}).catch((err) => console.error('Error syncing addToCart:', err));
 		}
 	};
 
-	// -------------------
-	// Cart Actions
-	// -------------------
-	const addToCart = (product: Product) => {
-		setCart((prev) => {
-			const existing = prev.find((item) => item.id === product.id);
-			if (existing) {
-				syncWithBackend(`/${product.id}`, 'PUT', { quantity: existing.quantity + 1 });
-				return prev.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
-			}
-			syncWithBackend('', 'POST', { productId: product.id, quantity: 1 });
-			return [...prev, { ...product, quantity: 1 }];
-		});
-	};
-
 	const increaseQty = (id: string) => {
-		setCart((prev) =>
-			prev.map((item) => {
-				if (item.id === id) {
-					syncWithBackend(`/${id}`, 'PUT', { quantity: item.quantity + 1 });
-					return { ...item, quantity: item.quantity + 1 };
-				}
-				return item;
-			})
-		);
+		setCart((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: i.quantity + 1 } : i)));
+
+		if (user && token) {
+			const item = cart.find((i) => i.id === id);
+			if (item) {
+				fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/${id}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ user, quantity: item.quantity + 1 }),
+				}).catch((err) => console.error('Error syncing increaseQty:', err));
+			}
+		}
 	};
 
 	const decreaseQty = (id: string) => {
-		setCart(
-			(prev) =>
-				prev
-					.map((item) => {
-						if (item.id === id) {
-							const newQty = item.quantity - 1;
-							if (newQty > 0) {
-								syncWithBackend(`/${id}`, 'PUT', { quantity: newQty });
-								return { ...item, quantity: newQty };
-							} else {
-								syncWithBackend(`/${id}`, 'DELETE');
-								return null;
-							}
-						}
-						return item;
-					})
-					.filter(Boolean) as CartItem[]
+		setCart((prev) =>
+			prev.map((i) => (i.id === id ? { ...i, quantity: i.quantity - 1 } : i)).filter((i) => i.quantity > 0)
 		);
+
+		if (user && token) {
+			const item = cart.find((i) => i.id === id);
+			if (item) {
+				if (item.quantity - 1 > 0) {
+					fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/${id}`, {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({ user, quantity: item.quantity - 1 }),
+					}).catch((err) => console.error('Error syncing decreaseQty:', err));
+				} else {
+					fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove/${id}`, {
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({ user }),
+					}).catch((err) => console.error('Error syncing remove on decrease:', err));
+				}
+			}
+		}
 	};
 
 	const removeFromCart = (id: string) => {
-		setCart((prev) => prev.filter((item) => item.id !== id));
-		syncWithBackend(`/${id}`, 'DELETE');
+		setCart((prev) => prev.filter((i) => i.id !== id));
+
+		if (user && token) {
+			fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove/${id}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ user }),
+			}).catch((err) => console.error('Error syncing removeFromCart:', err));
+		}
 	};
 
 	const clearCart = () => {
 		setCart([]);
-		syncWithBackend('/clear', 'DELETE');
-	};
 
-	// -------------------
-	// Sync cart from backend (on login)
-	// -------------------
-	const syncCartFromBackend = async (token: string) => {
-		try {
-			const res = await fetch(`${API_URL}/api/cart`, {
+		if (user && token) {
+			fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/clear/${user._id}`, {
+				method: 'DELETE',
 				headers: { Authorization: `Bearer ${token}` },
-			});
-			if (!res.ok) throw new Error('Failed to fetch cart');
-			const backendCart = await res.json();
-
-			// Merge backend + local
-			setCart((prev) => {
-				const merged = [...backendCart.items];
-				prev.forEach((localItem) => {
-					const exists = merged.find((i) => i.id === localItem.id);
-					if (exists) {
-						exists.quantity += localItem.quantity;
-					} else {
-						merged.push(localItem);
-					}
-				});
-				return merged;
-			});
-		} catch (err) {
-			console.error('Cart sync failed:', err);
+				body: JSON.stringify({ user }),
+			}).catch((err) => console.error('Error syncing clearCart:', err));
 		}
 	};
 
@@ -159,7 +172,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 				increaseQty,
 				decreaseQty,
 				clearCart,
-				syncCartFromBackend,
 				isLoaded,
 			}}
 		>

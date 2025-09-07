@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const authMiddleware = require('../middleware/auth');
+const { ObjectId } = require('mongodb');
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
 router.get('/', authMiddleware, async (req, res) => {
 	try {
 		const db = await getDb();
-		const user = await db.collection('users').findOne({ _id: req.user.id }, { projection: { cart: 1 } });
+		const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(req.body.user.id) }, { projection: { cart: 1 } });
 
 		res.json({ items: user?.cart || [] });
 	} catch (err) {
@@ -21,13 +22,15 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
 	const { productId, quantity } = req.body;
 
+
+
 	if (!productId || !quantity) {
 		return res.status(400).json({ error: 'productId and quantity required' });
 	}
 
 	try {
 		const db = await getDb();
-		const user = await db.collection('users').findOne({ _id: req.user.id });
+		const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(req.body.user.id) });
 
 		let cart = user?.cart || [];
 		const existing = cart.find((item) => item.id === productId);
@@ -38,7 +41,7 @@ router.post('/', authMiddleware, async (req, res) => {
 			cart.push({ id: productId, quantity });
 		}
 
-		await db.collection('users').updateOne({ _id: req.user.id }, { $set: { cart } }, { upsert: true });
+		await db.collection('users').updateOne({ _id: ObjectId.createFromHexString(req.body.user.id) }, { $set: { cart } }, { upsert: true });
 
 		res.json({ items: cart });
 	} catch (err) {
@@ -58,7 +61,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
 	try {
 		const db = await getDb();
-		const user = await db.collection('users').findOne({ _id: req.user.id });
+		const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(req.body.user.id) });
 
 		let cart = user?.cart || [];
 		const existing = cart.find((item) => item.id === productId);
@@ -69,7 +72,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 			cart.push({ id: productId, quantity });
 		}
 
-		await db.collection('users').updateOne({ _id: req.user.id }, { $set: { cart } });
+		await db.collection('users').updateOne({ _id: ObjectId.createFromHexString(req.body.user.id) }, { $set: { cart } });
 
 		res.json({ items: cart });
 	} catch (err) {
@@ -79,16 +82,17 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // ✅ Remove item
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.put('/remove/:id', authMiddleware, async (req, res) => {
 	const productId = req.params.id;
 
 	try {
 		const db = await getDb();
-		const user = await db.collection('users').findOne({ _id: req.user.id });
+		
+		const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(req.body.user.id) });
 
 		let cart = (user?.cart || []).filter((item) => item.id !== productId);
 
-		await db.collection('users').updateOne({ _id: req.user.id }, { $set: { cart } });
+		await db.collection('users').updateOne({ _id: ObjectId.createFromHexString(req.body.user.id) }, { $set: { cart } });
 
 		res.json({ items: cart });
 	} catch (err) {
@@ -98,10 +102,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // ✅ Clear cart
-router.delete('/clear', authMiddleware, async (req, res) => {
+router.delete('/clear/:userID', authMiddleware, async (req, res) => {
 	try {
 		const db = await getDb();
-		await db.collection('users').updateOne({ _id: req.user.id }, { $set: { cart: [] } });
+		await db.collection('users').updateOne({ _id: ObjectId.createFromHexString(req.params.userID) }, { $set: { cart: [] } });
 
 		res.json({ items: [] });
 	} catch (err) {

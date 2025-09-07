@@ -6,10 +6,12 @@ import { FiShoppingCart } from 'react-icons/fi';
 import { useCart } from '@/context/CartContext';
 import type { Product } from '@/types';
 
-export default function ProductCard(data: Product) {
-	const { addToCart, cart } = useCart();
 
-	const isInCart = cart.some((item: Product) => item.id === data.id);
+export default function ProductCard(data: Product) {
+	const { addToCart, cart, isLoaded } = useCart();
+
+	// ✅ Guard against undefined cart
+	const isInCart = isLoaded && cart?.some((item) => item.id === data.id);
 
 	const handleAddToCart = () => {
 		if (!isInCart) {

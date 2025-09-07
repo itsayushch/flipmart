@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
+const { connectDB } = require('../database');
 const { ObjectId } = require('mongodb');
-const connectDB = require('../database');
 
 async function auth(req, res, next) {
 	const header = req.header('Authorization');
@@ -9,17 +9,18 @@ async function auth(req, res, next) {
 	}
 
 	const token = header.split(' ')[1];
+
 	try {
 		const payload = jwt.verify(token, process.env.JWT_SECRET);
+
 		const db = await connectDB();
-		const user = await db
-			.collection('users')
-			.findOne({ _id: new ObjectId(payload.id) }, { projection: { password: 0 } });
+		const user = await db.collection('users').findOne({ _id: ObjectId.createFromHexString(payload.id) }, { projection: { password: 0 } });
 
 		if (!user) return res.status(401).json({ message: 'User not found' });
 		req.user = user;
 		next();
 	} catch (err) {
+		console.error('Auth error:', err);
 		return res.status(401).json({ message: 'Invalid token' });
 	}
 }

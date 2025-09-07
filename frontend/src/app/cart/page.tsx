@@ -20,11 +20,25 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { products } from '@/utils/dummy_products';
+import type { CartItem } from '@/context/CartContext';
+import type { Product } from '@/types';
+import Footer from '@/components/Footer';
+
+function getDetailedCart(cart: CartItem[]): (Product & { quantity: number })[] {
+	return cart
+		.map((item) => {
+			const product = products.find((p) => p.id === item.id);
+			if (!product) return null;
+			return { ...product, quantity: item.quantity };
+		})
+		.filter(Boolean) as (Product & { quantity: number })[];
+}
 
 export default function CartPage() {
-	const { cart, increaseQty, decreaseQty, removeFromCart, clearCart, isLoaded } = useCart();
+	const { cart: raw_cart, increaseQty, decreaseQty, removeFromCart, clearCart, isLoaded } = useCart();
 	const router = useRouter();
-
+	const cart = getDetailedCart(raw_cart);
 	// Controlled dialog state: null = closed, "remove" | "clear" = open
 	const [dialogAction, setDialogAction] = useState<null | { type: 'remove' | 'clear'; id?: string }>(null);
 
@@ -111,14 +125,33 @@ export default function CartPage() {
 											boxSize={{ base: '60px', sm: '80px' }} // smaller on mobile
 											objectFit="cover"
 											rounded="md"
+											onError={(e) => {
+												e.currentTarget.src =
+													'https://plus.unsplash.com/premium_photo-1683141052679-942eb9e77760?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+											}}
 										/>
 										<VStack align="start" gap={1}>
 											<Text fontWeight="bold" fontSize={{ base: 'md', sm: 'lg' }}>
-												{item.name}
+												{item.company.toUpperCase()}
 											</Text>
-											<Text color="gray.600" fontSize={{ base: 'sm', sm: 'md' }}>
-												₹{item.price}
-											</Text>
+
+											<Text fontSize={{ base: 'md', sm: 'lg' }}>{item.name}</Text>
+											<Flex align="center" mt={2} mb={2} gap={2}>
+												<Text fontWeight="bold" fontSize="sm" color="gray.800">
+													Rs. {item.price}
+												</Text>
+												<Text
+													fontSize="sm"
+													color="gray.500"
+													as="span"
+													textDecoration="line-through"
+												>
+													Rs. {item.originalPrice}
+												</Text>
+												<Text fontSize="xs" color="red.400" fontWeight="semibold">
+													({item.discountPercent}% OFF)
+												</Text>
+											</Flex>
 										</VStack>
 									</HStack>
 
@@ -177,9 +210,19 @@ export default function CartPage() {
 												x {item.quantity}
 											</Text>
 										</Box>
-										<Text fontWeight="bold" fontSize="md" color="teal.600">
-											₹{item.price * item.quantity}
-										</Text>
+										<Flex align="center" mt={2} mb={2} gap={2}>
+											<Text
+												fontSize="sm"
+												color="gray.500"
+												as="span"
+												textDecoration="line-through"
+											>
+												Rs. {item.originalPrice * item.quantity}
+											</Text>
+											<Text fontWeight="bold" fontSize="md" color="teal.600">
+												₹{item.price * item.quantity}
+											</Text>
+										</Flex>
 									</Flex>
 								))}
 								<Separator />
@@ -258,6 +301,7 @@ export default function CartPage() {
 					</Portal>
 				</Dialog.Root>
 			</Box>
+			<Footer />
 		</>
 	);
 }

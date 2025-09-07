@@ -2,7 +2,7 @@
 import { Box, Flex, Image, Link, VStack, useBreakpointValue, HoverCard, Portal, Text, Button } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FaRegUser, FaShoppingCart } from 'react-icons/fa';
+import { FaBars, FaRegUser, FaShoppingCart } from 'react-icons/fa';
 import { useUser } from '@/context/UserContext';
 
 // Component for navigation links to avoid repetition
@@ -43,6 +43,7 @@ export default function Navbar() {
 	// Check if the current view is a desktop or mobile device
 	const isDesktop = useBreakpointValue({ base: false, md: true });
 	const [open, setOpen] = useState(false);
+	const [hamburgerOpen, setHamburgerOpen] = useState(false);
 	return (
 		<Box
 			as="nav"
@@ -135,9 +136,17 @@ export default function Navbar() {
 											{!isLoaded ? (
 												''
 											) : user ? (
-												<Button width="200px" colorPalette={'pink'} onClick={logout}>LOGOUT</Button>
+												<Button width="200px" colorPalette={'pink'} onClick={logout}>
+													LOGOUT
+												</Button>
 											) : (
-												<Button width="200px" colorPalette={'pink'} onClick={() => Router.push('/login')}>LOGIN / SIGNUP</Button>
+												<Button
+													width="200px"
+													colorPalette={'pink'}
+													onClick={() => Router.push('/login')}
+												>
+													LOGIN / SIGNUP
+												</Button>
 											)}
 
 											<VStack align="start" mt={4} gap={2} fontSize="sm" fontWeight="medium">
@@ -202,7 +211,6 @@ export default function Navbar() {
 											transitionDuration="200ms"
 										>
 											<FaRegUser size="1.25em" />
-											<Box>Profile</Box>
 										</VStack>
 									</Link>
 								</HoverCard.Trigger>
@@ -223,9 +231,17 @@ export default function Navbar() {
 											{!isLoaded ? (
 												''
 											) : user ? (
-												<Button width="200px" colorPalette={'pink'} onClick={logout}>LOGOUT</Button>
+												<Button width="200px" colorPalette={'pink'} onClick={logout}>
+													LOGOUT
+												</Button>
 											) : (
-												<Button width="200px" colorPalette={'pink'} onClick={() => Router.push('/login')}>LOGIN / SIGNUP</Button>
+												<Button
+													width="200px"
+													colorPalette={'pink'}
+													onClick={() => Router.push('/login')}
+												>
+													LOGIN / SIGNUP
+												</Button>
 											)}
 
 											<VStack align="start" mt={4} gap={2} fontSize="sm" fontWeight="medium">
@@ -272,9 +288,46 @@ export default function Navbar() {
 									transitionDuration="200ms"
 								>
 									<FaShoppingCart size="1.25em" />
-									<Box>Cart</Box>
 								</VStack>
 							</Link>
+							<HoverCard.Root size="sm" open={hamburgerOpen} openDelay={0} onOpenChange={(e) => setHamburgerOpen(e.open)}>
+								<HoverCard.Trigger asChild>
+									<Link href="#" _hover={{ textDecoration: 'none' }}>
+										<VStack
+											p={2}
+											rounded="lg"
+											_hover={{ bg: 'gray.100' }}
+											transitionProperty="background"
+											transitionDuration="200ms"
+										>
+											<FaBars size="1.25em" />
+										</VStack>
+									</Link>
+								</HoverCard.Trigger>
+								<Portal>
+									<HoverCard.Positioner>
+										<HoverCard.Content maxWidth="240px">
+											<HoverCard.Arrow />
+											<VStack align="start" gap={2} fontSize="sm" fontWeight="medium">
+												{['MEN', 'WOMEN', 'KIDS', 'HOME & LIVING', 'BEAUTY', 'STUDIO'].map(
+													(item) => (
+														<NavLink key={item} isNew={item === 'STUDIO'}>
+															<Text
+																transition={'0.2s'}
+																_hover={{ color: 'pink.500' }}
+																onClick={() => Router.push('/products')}
+																fontWeight="bold"
+															>
+																{item}
+															</Text>
+														</NavLink>
+													)
+												)}
+											</VStack>
+										</HoverCard.Content>
+									</HoverCard.Positioner>
+								</Portal>
+							</HoverCard.Root>
 						</Flex>
 					)}
 				</Flex>

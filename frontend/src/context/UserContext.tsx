@@ -9,6 +9,7 @@ interface DecodedToken {
 	name?: string;
 	email?: string;
 	exp: number;
+	cart: User['cart'];
 }
 
 interface UserContextType {
@@ -39,7 +40,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 			const userObj: User = { id: decoded.id, name: decoded?.name, email: decoded?.email };
 			setUser(userObj);
 			setToken(jwt);
+
 			localStorage.setItem('token', jwt);
+			localStorage.setItem('cart', decoded.cart ? JSON.stringify(decoded.cart) : '[]');
 		} catch (err) {
 			console.error('Invalid token:', err);
 			logout();
