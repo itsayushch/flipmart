@@ -36,13 +36,13 @@ export default function App() {
 		let arr = [...products];
 		if (company) arr = arr.filter((p) => p.company === company);
 		if (category) arr = arr.filter((p) => p.category === category);
-		if (search) arr = arr.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+		if (search) arr = arr.filter((p) => `${p.company} ${p.name}`.toLowerCase().includes(search.toLowerCase()));
 		switch (sort) {
 			case 'name-asc':
-				arr.sort((a, b) => a.name.localeCompare(b.name));
+				arr.sort((a, b) => a.company.localeCompare(b.company));
 				break;
 			case 'name-desc':
-				arr.sort((a, b) => b.name.localeCompare(a.name));
+				arr.sort((a, b) => b.company.localeCompare(a.company));
 				break;
 			case 'rating-desc':
 				arr.sort((a, b) => b.rating - a.rating);

@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import {
 	Box,
@@ -18,6 +19,8 @@ import Navbar from '@/components/Navbar'; // assuming navbar exists
 import { products } from '@/utils/dummy_products';
 import ProductCard from '@/components/ProductCard';
 import { FaArrowRightLong } from 'react-icons/fa6';
+import Footer from '@/components/Footer';
+import { useRouter } from 'next/navigation';
 
 const categories = [
 	{
@@ -48,6 +51,7 @@ const categories = [
 
 // Main Landing Page
 export default function LandingPage() {
+	const Router = useRouter();
 	return (
 		<Box bg="gray.50" fontFamily="Inter, sans-serif">
 			<Navbar />
@@ -136,8 +140,9 @@ export default function LandingPage() {
 							shadow="md"
 							p={4}
 							gap={3}
-							_hover={{ shadow: 'xl', transform: 'translateY(-6px)', bg: 'gray.50' }}
+							_hover={{ shadow: 'xl', transform: 'translateY(-6px)', bg: 'gray.50', cursor: 'pointer' }}
 							transition="0.2s"
+							onClick={() => Router.push(`/products?category=${c.name.toLowerCase()}`)}
 						>
 							<Image
 								src={c.img}
@@ -189,7 +194,7 @@ export default function LandingPage() {
 			</Box>
 
 			{/* Newsletter Signup */}
-			<Box bg="gray.900" color="white" py={12} px={6}>
+			<Box bg="gray.900" color="white" mt={20} py={12} px={6}>
 				<VStack maxW="800px" mx="auto" gap={4} textAlign="center">
 					<Heading size="md">Stay Updated</Heading>
 					<Text fontSize="sm" color="gray.300">
@@ -205,45 +210,7 @@ export default function LandingPage() {
 			</Box>
 
 			{/* Footer */}
-			<Box bg="gray.800" color="gray.300" py={12} px={6}>
-				<SimpleGrid columns={{ base: 1, md: 4 }} gap={8} maxW="1200px" mx="auto">
-					<VStack align="flex-start" gap={2}>
-						<Heading size="sm" color="white">
-							FlipMart
-						</Heading>
-						<Text fontSize="sm">Your one-stop online store for fashion, electronics, and more.</Text>
-					</VStack>
-					<VStack align="flex-start" gap={2}>
-						<Heading size="sm" color="white">
-							Shop
-						</Heading>
-						<Link>Men</Link>
-						<Link>Women</Link>
-						<Link>Electronics</Link>
-						<Link>Beauty</Link>
-					</VStack>
-					<VStack align="flex-start" gap={2}>
-						<Heading size="sm" color="white">
-							Help
-						</Heading>
-						<Link>FAQs</Link>
-						<Link>Returns</Link>
-						<Link>Shipping</Link>
-						<Link>Support</Link>
-					</VStack>
-					<VStack align="flex-start" gap={2}>
-						<Heading size="sm" color="white">
-							Follow Us
-						</Heading>
-						<Link>Instagram</Link>
-						<Link>Facebook</Link>
-						<Link>Twitter</Link>
-					</VStack>
-				</SimpleGrid>
-				<Text textAlign="center" mt={8} fontSize="sm" color="gray.500">
-					© 2025 FlipMart. All Rights Reserved.
-				</Text>
-			</Box>
+			<Footer />
 		</Box>
 	);
 }

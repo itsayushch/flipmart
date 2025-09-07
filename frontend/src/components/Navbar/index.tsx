@@ -1,8 +1,9 @@
 'use client';
-import { Box, Flex, Image, Link, VStack, useBreakpointValue, HoverCard, Portal, Text } from '@chakra-ui/react';
+import { Box, Flex, Image, Link, VStack, useBreakpointValue, HoverCard, Portal, Text, Button } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FaRegUser, FaShoppingCart } from 'react-icons/fa';
+import { useUser } from '@/context/UserContext';
 
 // Component for navigation links to avoid repetition
 const NavLink = ({ children, isNew = false }: { children: React.ReactNode; isNew?: boolean }) => (
@@ -36,6 +37,8 @@ const NavLink = ({ children, isNew = false }: { children: React.ReactNode; isNew
 
 // Main Navbar component
 export default function Navbar() {
+	const { user, logout, isLoaded } = useUser();
+
 	const Router = useRouter();
 	// Check if the current view is a desktop or mobile device
 	const isDesktop = useBreakpointValue({ base: false, md: true });
@@ -123,26 +126,20 @@ export default function Navbar() {
 												Welcome
 											</Box>
 											<Box mt={1} mb={3} fontSize="sm" color="gray.500">
-												To access account and manage orders.
+												{isLoaded
+													? user
+														? `Hello, ${user.name}`
+														: 'Sign in for the best experience'
+													: 'Loading...'}
 											</Box>
-											<Link
-												href="#"
-												display="block"
-												width="100%"
-												textAlign="center"
-												py={2}
-												borderWidth="1px"
-												borderColor="pink.500"
-												color="pink.500"
-												rounded="md"
-												fontWeight="semibold"
-												fontSize="sm"
-												_hover={{ bg: 'pink.500', color: 'white' }}
-												transitionProperty="background"
-												transitionDuration="200ms"
-											>
-												LOGIN / SIGNUP
-											</Link>
+											{!isLoaded ? (
+												''
+											) : user ? (
+												<Button width="200px" colorPalette={'pink'} onClick={logout}>LOGOUT</Button>
+											) : (
+												<Button width="200px" colorPalette={'pink'} onClick={() => Router.push('/login')}>LOGIN / SIGNUP</Button>
+											)}
+
 											<VStack align="start" mt={4} gap={2} fontSize="sm" fontWeight="medium">
 												<Link _hover={{ color: 'pink.500' }}>Orders</Link>
 												<Link _hover={{ color: 'pink.500' }}>Wishlist</Link>
@@ -194,15 +191,90 @@ export default function Navbar() {
 					) : (
 						// Mobile view icons
 						<Flex alignItems="center" gap={2} color="gray.500">
-							<Link href="#" _hover={{ textDecoration: 'none' }}>
-								<Box p={2} rounded="full" _hover={{ bg: 'gray.100' }}>
-									<FaRegUser size="1.5em" />
-								</Box>
-							</Link>
+							<HoverCard.Root size="sm" open={open} openDelay={0} onOpenChange={(e) => setOpen(e.open)}>
+								<HoverCard.Trigger asChild>
+									<Link href="#" _hover={{ textDecoration: 'none' }}>
+										<VStack
+											p={2}
+											rounded="lg"
+											_hover={{ bg: 'gray.100' }}
+											transitionProperty="background"
+											transitionDuration="200ms"
+										>
+											<FaRegUser size="1.25em" />
+											<Box>Profile</Box>
+										</VStack>
+									</Link>
+								</HoverCard.Trigger>
+								<Portal>
+									<HoverCard.Positioner>
+										<HoverCard.Content maxWidth="240px">
+											<HoverCard.Arrow />
+											<Box fontWeight="bold" fontSize="lg">
+												Welcome
+											</Box>
+											<Box mt={1} mb={3} fontSize="sm" color="gray.500">
+												{isLoaded
+													? user
+														? `Hello, ${user.name}`
+														: 'Sign in for the best experience'
+													: 'Loading...'}
+											</Box>
+											{!isLoaded ? (
+												''
+											) : user ? (
+												<Button width="200px" colorPalette={'pink'} onClick={logout}>LOGOUT</Button>
+											) : (
+												<Button width="200px" colorPalette={'pink'} onClick={() => Router.push('/login')}>LOGIN / SIGNUP</Button>
+											)}
 
-							<Box p={2} rounded="full" _hover={{ bg: 'gray.100' }}>
-								<FaShoppingCart onClick={() => Router.push('/cart')} size="1.5em" />
-							</Box>
+											<VStack align="start" mt={4} gap={2} fontSize="sm" fontWeight="medium">
+												<Link _hover={{ color: 'pink.500' }}>Orders</Link>
+												<Link _hover={{ color: 'pink.500' }}>Wishlist</Link>
+												<Link _hover={{ color: 'pink.500' }}>Gift Cards</Link>
+												<Link _hover={{ color: 'pink.500' }}>Contact Us</Link>
+												<Link _hover={{ color: 'pink.500' }}>
+													FlipMart Insider{' '}
+													<Box
+														as="span"
+														ml={1}
+														px={1}
+														py={0.5}
+														bg="red.500"
+														color="white"
+														borderRadius="full"
+														fontSize="xs"
+														fontWeight="bold"
+													>
+														NEW
+													</Box>
+												</Link>
+											</VStack>
+											<Box as="hr" my={4} borderColor="gray.200" />
+											<VStack align="start" gap={2} fontSize="sm" fontWeight="medium">
+												<Link _hover={{ color: 'pink.500' }}>FlipMart Credit</Link>
+												<Link _hover={{ color: 'pink.500' }}>Coupons</Link>
+												<Link _hover={{ color: 'pink.500' }}>Saved Cards</Link>
+												<Link _hover={{ color: 'pink.500' }}>Saved VPA</Link>
+												<Link _hover={{ color: 'pink.500' }}>Saved Addresses</Link>
+											</VStack>
+										</HoverCard.Content>
+									</HoverCard.Positioner>
+								</Portal>
+							</HoverCard.Root>
+
+							<Link onClick={() => Router.push('/cart')} _hover={{ textDecoration: 'none' }}>
+								<VStack
+									p={2}
+									rounded="lg"
+									_hover={{ bg: 'gray.100' }}
+									transitionProperty="background"
+									transitionDuration="200ms"
+								>
+									<FaShoppingCart size="1.25em" />
+									<Box>Cart</Box>
+								</VStack>
+							</Link>
 						</Flex>
 					)}
 				</Flex>
